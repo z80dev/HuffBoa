@@ -23,21 +23,19 @@ def addnums(x: uint256, y: uint256) -> uint256:
 # Load the Adder contract from source code
 AdderContract = boa.loads_partial(adder_source, "Adder")
 
-# custom precompile
-def compile_huff_code(computation):
-    message_data = computation.msg.data_as_bytes
-    contract_data = abi.decode("(string)", message_data[4:])
-    compilation_process = subprocess.run(["huffc", "-b", contract_data[0]], capture_output=True)
+@boa.precompile("def huff(filename: String[128]) -> address")
+def huff(filename: str):
+    compilation_process = subprocess.run(["huffc", "-b", filename], capture_output=True)
 
     contract_address = boa.env.generate_address()
     contract_bytecode = binascii.unhexlify(compilation_process.stdout)
-    deployment_output = boa.env.deploy_code(deploy_to=contract_address, bytecode=contract_bytecode)
+    boa.env.deploy_code(deploy_to=contract_address, bytecode=contract_bytecode)
 
-    computation.output = bytes(12) + binascii.unhexlify(bytes(contract_address[2:], 'utf-8'))
-    return computation
+    return contract_address
+
 
 HUFF_PRECOMPILE_ADDRESS = bytes.fromhex("0000000000000000000000000000000068756666") # "huff" in bytes
-register_precompile(HUFF_PRECOMPILE_ADDRESS, compile_huff_code)
+register_precompile(HUFF_PRECOMPILE_ADDRESS, huff)
 
 huff_deployer = boa.load("contracts/HuffDeployer.vy")
 huff_user = boa.load("contracts/HuffUser.vy")
@@ -47,4 +45,5 @@ huff_adder_instance = AdderContract.at(huff_adder_address)
 
 print(huff_adder_instance.addnums(6, 4))
 print(huff_user.useHuff(huff_adder_instance))
+
 ```
