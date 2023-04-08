@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import boa
-from boa.environment import abi, Env, register_precompile
+from boa.environment import abi, register_precompile
 import subprocess
 import binascii
 
@@ -15,14 +15,13 @@ def addnums(x: uint256, y: uint256) -> uint256:
 AdderContract = boa.loads_partial(adder_source, "Adder")
 
 def compile_huff_code(computation):
-    env = Env.get_singleton()
     message_data = computation.msg.data_as_bytes
     contract_data = abi.decode("(string)", message_data[4:])
     compilation_process = subprocess.run(["huffc", "-b", contract_data[0]], capture_output=True)
 
-    contract_address = env.generate_address()
+    contract_address = boa.env.generate_address()
     contract_bytecode = binascii.unhexlify(compilation_process.stdout)
-    deployment_output = env.deploy_code(deploy_to=contract_address, bytecode=contract_bytecode)
+    deployment_output = boa.env.deploy_code(deploy_to=contract_address, bytecode=contract_bytecode)
 
     computation.output = bytes(12) + binascii.unhexlify(bytes(contract_address[2:], 'utf-8'))
     return computation
