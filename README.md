@@ -23,6 +23,7 @@ def addnums(x: uint256, y: uint256) -> uint256:
 # Load the Adder contract from source code
 AdderContract = boa.loads_partial(adder_source, "Adder")
 
+# custom precompile
 def compile_huff_code(computation):
     message_data = computation.msg.data_as_bytes
     contract_data = abi.decode("(string)", message_data[4:])
